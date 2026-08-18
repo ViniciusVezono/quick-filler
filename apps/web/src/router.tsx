@@ -1,5 +1,6 @@
 import { Outlet, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { UploadPage } from './pages/upload-page'
+import { TranscriptionPage } from './pages/transcription-page'
 
 function RootLayout() {
   return (
@@ -15,7 +16,8 @@ function RootLayout() {
 
 const rootRoute = createRootRoute({ component: RootLayout })
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: UploadPage })
-const routeTree = rootRoute.addChildren([indexRoute])
+const transcriptionRoute = createRoute({ getParentRoute: () => rootRoute, path: '/transcricoes/$id', component: TranscriptionPage })
+const routeTree = rootRoute.addChildren([indexRoute, transcriptionRoute])
 
 export const router = createRouter({ routeTree, defaultPreload: 'intent' })
 
