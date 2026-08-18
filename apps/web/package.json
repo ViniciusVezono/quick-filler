@@ -18,9 +18,11 @@
   },
   "devDependencies": {
     "@playwright/test": "latest",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
+    "tailwindcss": "^4.3.3",
     "vite": "^8.2.1"
   }
 }
