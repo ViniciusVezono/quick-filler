@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import 'reflect-metadata'
-import { Logger, ValidationPipe } from '@nestjs/common'
+import { Logger } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module.js'
 import { config } from './config.js'
@@ -13,7 +13,6 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
     exposedHeaders: ['Content-Disposition'],
   })
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }))
   app.useGlobalFilters(new SanitizedExceptionFilter())
   app.enableShutdownHooks()
   await app.listen(config.port, '0.0.0.0')

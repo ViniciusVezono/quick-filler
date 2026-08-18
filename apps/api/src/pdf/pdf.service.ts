@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import type { PageInput, PageToken } from '@quick-filler/domain'
 import { createCanvas } from '@napi-rs/canvas'
-import { recognize } from 'tesseract.js'
+import Tesseract from 'tesseract.js'
 import { config } from '../config.js'
 
 type PdfTextItem = {
@@ -81,7 +81,7 @@ export class PdfService {
     const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height))
     const context = canvas.getContext('2d')
     await page.render({ canvasContext: context, viewport, canvas }).promise
-    const result = await recognize(canvas.toBuffer('image/png'), config.ocrLanguage, {
+    const result = await Tesseract.recognize(canvas.toBuffer('image/png'), config.ocrLanguage, {
       logger: () => undefined,
     })
     const tsv = result.data.tsv ?? ''
