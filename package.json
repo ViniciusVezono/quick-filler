@@ -1,0 +1,36 @@
+{
+  "name": "quick-filler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build -w @quick-filler/domain && concurrently -n domain,api,web -c yellow,blue,green \"npm run dev -w @quick-filler/domain\" \"npm run dev -w @quick-filler/api\" \"npm run dev -w @quick-filler/web\"",
+    "build": "npm run build -w @quick-filler/domain && npm run build -w @quick-filler/api && npm run build -w @quick-filler/web",
+    "typecheck": "npm run build -w @quick-filler/domain && npm run typecheck -w @quick-filler/api && npm run typecheck -w @quick-filler/web",
+    "lint": "eslint .",
+    "test": "npm run build -w @quick-filler/domain && npm run test -w @quick-filler/domain && npm run test -w @quick-filler/api",
+    "test:e2e": "npm run test:e2e -w @quick-filler/web",
+    "db:generate": "npm run db:generate -w @quick-filler/api",
+    "db:migrate": "npm run db:migrate -w @quick-filler/api",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/node": "latest",
+    "concurrently": "latest",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "globals": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

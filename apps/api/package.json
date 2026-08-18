@@ -1,0 +1,38 @@
+{
+  "name": "@quick-filler/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate --config prisma.config.ts",
+    "db:migrate": "prisma migrate deploy --config prisma.config.ts"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "latest",
+    "@nestjs/common": "^11.2.1",
+    "@nestjs/core": "^11.2.1",
+    "@nestjs/platform-express": "^11.2.1",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "@quick-filler/domain": "*",
+    "dotenv": "latest",
+    "exceljs": "^4.4.0",
+    "pdfjs-dist": "^6.2.108",
+    "pg": "latest",
+    "reflect-metadata": "latest",
+    "rxjs": "latest",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "latest",
+    "@types/multer": "latest",
+    "@types/pg": "latest",
+    "prisma": "^7.9.1",
+    "supertest": "latest",
+    "tsx": "latest"
+  }
+}
