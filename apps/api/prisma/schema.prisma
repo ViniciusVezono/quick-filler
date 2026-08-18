@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentType {
+  cartao_ponto
+  holerite
+}
+
+enum TranscriptionStatus {
+  processando
+  concluido
+  erro
+}
+
+model Transcription {
+  id        String              @id @db.Uuid
+  type      DocumentType
+  status    TranscriptionStatus @default(processando)
+  error     String?
+  value     Json?
+  pdfData   Bytes               @map("pdf_data")
+  pdfSize   Int                 @map("pdf_size")
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expiresAt DateTime            @map("expires_at") @db.Timestamptz(6)
+
+  @@index([status, updatedAt])
+  @@index([expiresAt])
+  @@map("transcriptions")
+}
