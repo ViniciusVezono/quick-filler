@@ -1,18 +1,41 @@
 # Processo de implementação
 
-Registro escrito durante a implementação em 18/08/2026.
+Registro iniciado durante a implementação em 18/08/2026 e atualizado em 19/08/2026.
 
-## Ferramentas usadas
+## Ferramentas e skills utilizadas
 
-- Codex: leitura do plano, implementação e validação local.
-- `design-html`: princípios de hierarquia, legibilidade e adaptação de viewport usados na
-  tela plan-driven. O artefato Pretext de página única não foi copiado porque o plano exige
-  uma aplicação React multiestado e declara um design system separado fora do escopo.
-- npm/TypeScript/Vitest: resolução das versões instaladas, tipos e regressão unitária.
+- Codex: leitura do plano, implementação, refatoração e validação local.
+- `gstack`: skill roteadora usada para selecionar o fluxo adequado a cada solicitação e
+  evitar a execução de pipelines que não correspondessem ao escopo da mudança.
+- `design-html` (gstack): princípios de hierarquia, legibilidade e adaptação de viewport
+  usados na tela plan-driven. O artefato Pretext de página única não foi copiado porque o
+  plano exige uma aplicação React multiestado e declara um design system separado fora do
+  escopo.
+- `review` (gstack): revisão pré-integração do diff, aplicada depois das validações para
+  procurar regressões estruturais antes do merge na `main`.
+- npm/TypeScript/Vitest/Playwright: resolução das versões instaladas, tipos e regressões
+  unitárias, de API e de fluxo completo.
 - Docker: unidade reproduzível de API, web e PostgreSQL.
 
-Não foram usados subagentes, pois a sessão ativa não autorizava delegação. Nenhum commit foi
-criado; os checkpoints ficam para decisão do autor do repositório.
+As skills `plan-eng-review`, `qa` e `ship` fazem parte do fluxo de desenvolvimento gstack e
+são indicadas, respectivamente, para revisar decisões arquiteturais, executar ciclos de QA
+com correção e preparar push/PR. Elas não são marcadas como executadas neste registro quando
+o escopo já está definido, os E2E existentes cobrem a alteração ou não há autorização para
+publicar o repositório.
+
+Não foram usados subagentes, pois a sessão ativa não autorizava delegação. Após a solicitação
+do autor, o versionamento passou a seguir Git Flow com branches `feature/*` ou `fix/*`, commits
+convencionais por checkpoint e merge `--no-ff` na `main`. O push continua fora do fluxo local.
+
+## Organização dos módulos web
+
+Os módulos de revisão e comunicação com a API ficam diretamente em `apps/web/src`:
+
+- `review/`: editores de cartão de ponto e holerite;
+- `transcription/`: service HTTP e configuração de queries/mutations do TanStack Query.
+
+A camada intermediária `features/` foi removida para evitar um nível de diretório sem função
+arquitetural. As páginas continuam responsáveis apenas pela composição dos módulos.
 
 ## Correções de rota durante o trabalho
 
@@ -67,4 +90,3 @@ e instalar OpenSSL para o Prisma.
 - download do idioma do Tesseract pode falhar em ambiente sem saída de rede;
 - `bytea` aumenta rapidamente backup e I/O do banco;
 - sem autenticação ou rate limit, o endpoint público não deve receber documentos reais.
-
