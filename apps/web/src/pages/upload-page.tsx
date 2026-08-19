@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import type { DocumentType } from '@quick-filler/domain'
 import { FileIcon, UploadIcon } from '../components/icons'
 import { buttonPrimary, eyebrow } from '../components/ui-classes'
-import { uploadTranscription } from '../lib/api'
+import { transcriptionMutations } from '../features/transcription/transcription.queries'
 
 const maxBytes = 15 * 1024 * 1024
 
@@ -15,7 +15,7 @@ export function UploadPage() {
   const [type, setType] = useState<DocumentType>('cartao-ponto')
   const [localError, setLocalError] = useState<string | null>(null)
   const mutation = useMutation({
-    mutationFn: () => uploadTranscription(file!, type),
+    ...transcriptionMutations.upload(),
     onSuccess: ({ id }) => navigate({ to: '/transcricoes/$id', params: { id } }),
   })
 
@@ -36,7 +36,7 @@ export function UploadPage() {
   function submit(event: React.FormEvent) {
     event.preventDefault()
     if (!file) return setLocalError('Selecione um PDF para continuar.')
-    mutation.mutate()
+    mutation.mutate({ file, type })
   }
 
   return (
