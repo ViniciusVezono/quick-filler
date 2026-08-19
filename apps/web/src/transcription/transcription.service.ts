@@ -1,6 +1,6 @@
 import type { DocumentType, TranscriptionStatus, TranscriptionValue } from '@quick-filler/domain'
 
-const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
 
 export type TranscriptionResponse = {
   id: string
@@ -29,14 +29,14 @@ export async function uploadTranscription(file: File, tipo: DocumentType): Promi
   form.append('arquivo', file)
   form.append('tipo', tipo)
 
-  const response = await fetch(`${apiUrl}/api/transcricoes`, { method: 'POST', body: form })
+  const response = await fetch(`${apiBaseUrl}/api/transcricoes`, { method: 'POST', body: form })
   if (!response.ok) return parseError(response)
 
   return response.json() as Promise<{ id: string }>
 }
 
 export async function getTranscription(id: string): Promise<TranscriptionResponse> {
-  const response = await fetch(`${apiUrl}/api/transcricoes/${id}`)
+  const response = await fetch(`${apiBaseUrl}/api/transcricoes/${id}`)
   if (!response.ok) return parseError(response)
 
   return response.json() as Promise<TranscriptionResponse>
@@ -46,7 +46,7 @@ export async function saveTranscription(
   id: string,
   value: TranscriptionValue,
 ): Promise<TranscriptionResponse> {
-  const response = await fetch(`${apiUrl}/api/transcricoes/${id}`, {
+  const response = await fetch(`${apiBaseUrl}/api/transcricoes/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ value }),
@@ -60,7 +60,7 @@ export async function downloadTranscription(
   id: string,
   format: 'xlsx' | 'csv' | 'json',
 ): Promise<void> {
-  const response = await fetch(`${apiUrl}/api/transcricoes/${id}/planilha?formato=${format}`)
+  const response = await fetch(`${apiBaseUrl}/api/transcricoes/${id}/planilha?formato=${format}`)
   if (!response.ok) return parseError(response)
 
   const blob = await response.blob()
@@ -75,5 +75,5 @@ export async function downloadTranscription(
 }
 
 export function getTranscriptionPdfUrl(id: string): string {
-  return `${apiUrl}/api/transcricoes/${id}/arquivo`
+  return `${apiBaseUrl}/api/transcricoes/${id}/arquivo`
 }

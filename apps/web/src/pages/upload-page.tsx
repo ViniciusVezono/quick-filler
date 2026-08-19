@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import type { DocumentType } from '@quick-filler/domain'
 import { FileIcon, UploadIcon } from '../components/icons'
 import { buttonPrimary, eyebrow } from '../components/ui-classes'
-import { transcriptionMutations } from '../features/transcription/transcription.queries'
+import { transcriptionMutations } from '../transcription/transcription.queries'
 
 const maxBytes = 15 * 1024 * 1024
 

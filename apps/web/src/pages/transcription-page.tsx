@@ -11,15 +11,15 @@ import {
   iconButton,
   panelHeading,
 } from '../components/ui-classes'
-import { PayrollEditor } from '../features/review/payroll-editor'
-import { TimeCardEditor } from '../features/review/time-card-editor'
+import { PayrollEditor } from '../review/payroll-editor'
+import { TimeCardEditor } from '../review/time-card-editor'
 import {
   transcriptionKeys,
   transcriptionMutations,
   transcriptionQueries,
   type TranscriptionExportFormat,
-} from '../features/transcription/transcription.queries'
-import { getTranscriptionPdfUrl } from '../features/transcription/transcription.service'
+} from '../transcription/transcription.queries'
+import { getTranscriptionPdfUrl } from '../transcription/transcription.service'
 
 export function TranscriptionPage() {
   const { id } = useParams({ from: '/transcricoes/$id' })
