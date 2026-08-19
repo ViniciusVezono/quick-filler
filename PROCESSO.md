@@ -68,11 +68,3 @@ e instalar OpenSSL para o Prisma.
 - `bytea` aumenta rapidamente backup e I/O do banco;
 - sem autenticação ou rate limit, o endpoint público não deve receber documentos reais.
 
-## Onde a entrega ainda exige verificação humana
-
-- precisão dos oito layouts reais, porque o corpus original está ausente;
-- goldens e planilhas finais, que só podem ser aprovados contra os PDFs;
-- OCR em imagem final de deploy com os dados de idioma empacotados;
-- URL pública e CORS final, que dependem da plataforma escolhida;
-- auditoria npm reporta vulnerabilidades transitivas no CLI Prisma e no ExcelJS; o risco e
-  versões devem ser reavaliados antes de exposição pública, sem aplicar downgrade automático.
