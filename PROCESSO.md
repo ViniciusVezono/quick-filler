@@ -2,30 +2,30 @@
 
 Registro iniciado durante a implementação em 18/08/2026 e atualizado em 19/08/2026.
 
+Este documento registra como a solução foi construída, quais ferramentas e skills foram usadas, decisões tomadas durante o desenvolvimento, erros encontrados, correções de rota e os pontos em que ainda existe incerteza técnica.
+
 ## Ferramentas e skills utilizadas
 
-- Codex: leitura do plano, implementação, refatoração e validação local.
-- `gstack`: skill roteadora usada para selecionar o fluxo adequado a cada solicitação e
-  evitar a execução de pipelines que não correspondessem ao escopo da mudança.
-- `design-html` (gstack): princípios de hierarquia, legibilidade e adaptação de viewport
-  usados na tela plan-driven. O artefato Pretext de página única não foi copiado porque o
-  plano exige uma aplicação React multiestado e declara um design system separado fora do
-  escopo.
-- `review` (gstack): revisão pré-integração do diff, aplicada depois das validações para
-  procurar regressões estruturais antes do merge na `main`.
-- npm/TypeScript/Vitest/Playwright: resolução das versões instaladas, tipos e regressões
-  unitárias, de API e de fluxo completo.
-- Docker: unidade reproduzível de API, web e PostgreSQL.
+- **Codex:** leitura do plano, implementação, refatoração e validação local.
+- **`gstack`:** skill roteadora usada para selecionar o fluxo adequado a cada solicitação e evitar a execução de pipelines que não correspondessem ao escopo da mudança.
+- **`/office-hours` (gstack):** originou o plano inicial de implementação, estruturando o problema, as restrições do desafio e a priorização do ciclo completo dentro do limite aproximado de 14 horas.
+- **`/plan-eng-review` (gstack):** revisou o plano contra o enunciado e os PDFs de exemplo. A revisão alterou pontos relevantes da arquitetura:
+  - os oito PDFs de exemplo passaram a ser tratados como corpus de aceitação;
+  - uma página física passou a poder produzir de zero a vários registros lógicos;
+  - o pipeline passou a preservar posição e confiança dos tokens quando disponíveis;
+  - os editores passaram a permitir correção estrutural mínima;
+  - as estratégias de layout foram simplificadas para um registry de funções, evitando uma arquitetura de plugins;
+  - a estratégia de regressão foi definida como oito goldens semânticos mais dois fluxos E2E completos.
+- **`design-html` (gstack):** princípios de hierarquia, legibilidade e adaptação de viewport usados na tela plan-driven. O artefato Pretext de página única não foi copiado porque o plano exige uma aplicação React multiestado e declara um design system separado fora do escopo.
+- **`review` (gstack):** revisão pré-integração do diff, aplicada depois das validações para procurar regressões estruturais antes do merge na `main`.
+- **npm / TypeScript / Vitest / Playwright:** resolução das versões instaladas, checagem de tipos e regressões unitárias, de API e de fluxo completo.
+- **Docker:** unidade reproduzível de API, web e PostgreSQL e também ambiente que revelou diferenças entre o host de desenvolvimento e o runtime Linux final.
 
-As skills `plan-eng-review`, `qa` e `ship` fazem parte do fluxo de desenvolvimento gstack e
-são indicadas, respectivamente, para revisar decisões arquiteturais, executar ciclos de QA
-com correção e preparar push/PR. Elas não são marcadas como executadas neste registro quando
-o escopo já está definido, os E2E existentes cobrem a alteração ou não há autorização para
-publicar o repositório.
+As skills `/qa` e `/ship` fazem parte do fluxo recomendado pelo gstack, mas não foram executadas nesta etapa. Os testes existentes foram executados diretamente com Vitest e Playwright, e não houve autorização para publicação do repositório pelo fluxo de `/ship`.
 
-Não foram usados subagentes, pois a sessão ativa não autorizava delegação. Após a solicitação
-do autor, o versionamento passou a seguir Git Flow com branches `feature/*` ou `fix/*`, commits
-convencionais por checkpoint e merge `--no-ff` na `main`. O push continua fora do fluxo local.
+Não foram usados subagentes, pois a sessão ativa não autorizava delegação.
+
+Após solicitação do autor, o versionamento passou a seguir Git Flow com branches `feature/*` ou `fix/*`, commits convencionais por checkpoint e merge `--no-ff` na `main`. O push continua fora do fluxo local.
 
 ## Organização dos módulos web
 
@@ -34,59 +34,228 @@ Os módulos de revisão e comunicação com a API ficam diretamente em `apps/web
 - `review/`: editores de cartão de ponto e holerite;
 - `transcription/`: service HTTP e configuração de queries/mutations do TanStack Query.
 
-A camada intermediária `features/` foi removida para evitar um nível de diretório sem função
-arquitetural. As páginas continuam responsáveis apenas pela composição dos módulos.
+A camada intermediária `features/` foi removida para evitar um nível de diretório sem função arquitetural. As páginas continuam responsáveis apenas pela composição dos módulos.
+
+Essa decisão foi mantida porque o escopo do desafio é pequeno e não havia benefício concreto em criar uma camada adicional apenas para reproduzir uma organização comum em projetos maiores.
 
 ## Correções de rota durante o trabalho
 
-### 1. Corpus assumido pelo plano, mas ausente
+### 1. Bordas novas do Prisma 7
 
-O plano tratava `exemplos/` e oito PDFs como existentes. A busca encontrou apenas PDFs
-pessoais com nomes diferentes. Reutilizá-los criaria PII no projeto e goldens sem relação
-com a aceitação. A correção foi manter testes sintéticos, criar o local esperado e registrar
-explicitamente que 8/8 goldens permanecem dependentes dos arquivos originais.
+A primeira checagem encontrou três mudanças de integração:
 
-### 2. Bordas novas do Prisma 7
+- o CLI exigia URL já ao carregar o config;
+- o runtime exige driver adapter;
+- o campo JSON nulo usa `Prisma.JsonNull`.
 
-A primeira checagem encontrou três mudanças: o CLI exigia URL já ao carregar o config, o
-runtime exige driver adapter e o campo JSON nulo usa `Prisma.JsonNull`. O código foi ajustado
-sem esconder o erro com casts amplos. `bytea` recebeu uma cópia `Uint8Array` compatível.
+O código foi ajustado sem esconder incompatibilidades com casts amplos. O campo `bytea` recebeu uma cópia em `Uint8Array` compatível com o runtime.
 
-### 3. Parser achatado por espaço simples
+**Detectado por:** typecheck, execução local e inicialização do runtime.
 
-A primeira versão do holerite separava linhas apenas por quebra ou dois espaços. PDF.js
-normaliza muitos documentos para uma sequência de tokens com um espaço, e o teste revelou
-que nenhuma verba era emitida. O parser passou a segmentar pelo valor monetário terminal,
-preservando código, descrição e referência quando presentes.
+**Decisão:** adaptar o código aos contratos atuais do Prisma em vez de contornar os erros de tipo.
 
-### 4. Regex com estado global
+### 2. Parser de holerite achatado por espaço simples
 
-Uma regex global era usada em `test()` antes de `matchAll()`. O `lastIndex` fazia a primeira
-data desaparecer, e o teste de cartão detectou a perda. A detecção agora cria regex sem
-estado e a extração cria uma instância global exclusiva.
+A primeira versão do holerite separava linhas apenas por quebra de linha ou por dois espaços consecutivos.
 
-### 5. O host escondia dois erros do runtime Linux
+Na prática, PDF.js normaliza muitos documentos para uma sequência de tokens separados por um único espaço. O teste revelou que nenhuma verba era emitida nesse formato.
 
-O Docker revelou que o import nomeado de `tesseract.js` funcionava para tipos, mas não no
-ESM real, e que `ValidationPipe` carregava `class-validator` apesar de toda validação já ser
-feita por Zod. O import passou a usar o objeto default do Tesseract e o pipe redundante foi
-removido. A imagem também passou a copiar explicitamente o `dist` do pacote compartilhado
-e instalar OpenSSL para o Prisma.
+O parser passou a segmentar registros pelo valor monetário terminal, preservando código, descrição e referência quando presentes.
+
+**Detectado por:** teste automatizado do extractor.
+
+**Decisão:** usar delimitadores observáveis no conteúdo em vez de depender da formatação textual produzida pelo PDF.js.
+
+### 3. Regex com estado global no cartão de ponto
+
+Uma regex global era usada em `test()` antes de `matchAll()`.
+
+Como regexes globais mantêm `lastIndex`, a primeira data podia desaparecer da extração. O teste do cartão de ponto detectou a perda.
+
+A detecção passou a usar uma regex sem estado, enquanto a etapa de extração cria uma instância global exclusiva para a iteração.
+
+**Detectado por:** teste automatizado do extractor de cartão de ponto.
+
+**Decisão:** separar regex de detecção e regex de iteração.
+
+### 4. O host escondia dois erros do runtime Linux
+
+O Docker revelou dois problemas que não apareciam da mesma forma no host:
+
+1. o import nomeado de `tesseract.js` funcionava para tipos, mas não no ESM real;
+2. `ValidationPipe` carregava `class-validator`, apesar de toda validação já ser feita por Zod.
+
+O import passou a usar o objeto default do Tesseract e o pipe redundante foi removido.
+
+A imagem também passou a:
+
+- copiar explicitamente o `dist` do pacote compartilhado;
+- instalar OpenSSL para o Prisma.
+
+**Detectado por:** build e execução dentro do container Linux.
+
+**Decisão:** tratar Docker como ambiente de validação real, não apenas como etapa final de empacotamento.
+
+### 5. Divergência do padrão de estilização do frontend
+
+A primeira implementação do frontend criou classes CSS intermediárias, embora o padrão adotado no projeto fosse Tailwind utility-first.
+
+A divergência foi identificada durante a revisão do layout e corrigida imediatamente, removendo a camada paralela de estilos e voltando ao padrão utilizado no restante da aplicação.
+
+**Detectado por:** revisão visual e revisão do código gerado.
+
+**Decisão:** manter o padrão Tailwind já adotado pelo projeto e evitar uma segunda convenção de estilização.
+
+O episódio reforçou que planejamento e skills de revisão ajudam a reduzir erros de direção, mas não substituem a validação contínua dos padrões locais durante a implementação.
+
+## Trechos reescritos manualmente e por quê
+
+### Parser de holerite
+
+A primeira abordagem assumia que o texto extraído preservaria separação por linhas ou espaços repetidos.
+
+Depois de observar a saída real do PDF.js e o teste sem verbas, a segmentação foi reescrita para usar o valor monetário terminal como delimitador de registro.
+
+A mudança foi manual porque dependia de interpretar o comportamento real do parser e escolher uma heurística que preservasse código, descrição, referência e valor sem criar um parser universal.
+
+### Extração de datas do cartão de ponto
+
+A lógica foi reescrita depois de identificar que uma regex global estava sendo reutilizada entre `test()` e `matchAll()`.
+
+A correção separou a regex usada para detecção da regex usada para iteração, removendo a dependência de `lastIndex`.
+
+### Estilização do frontend
+
+A implementação inicial criou uma camada de classes CSS que não correspondia ao padrão Tailwind do projeto.
+
+A revisão foi feita manualmente para remover essa camada e retornar ao modelo utility-first, evitando duas formas de estilização convivendo na mesma aplicação.
+
+### Integração com Tesseract no runtime
+
+O import que passava no ambiente de tipos não correspondia ao comportamento do pacote no runtime ESM dentro do Linux.
+
+O trecho foi ajustado a partir da execução real no Docker, privilegiando o comportamento observável do pacote sobre a forma que parecia correta apenas durante o desenvolvimento local.
 
 ## Decisões com mais de uma resposta razoável
 
-1. **Prisma versus SQL direto.** Prisma foi mantido porque o plano o escolhia como default e
-   o modelo é pequeno; SQL direto teria imagem menor e menos tooling no runtime.
-2. **OCR local versus serviço externo.** Tesseract.js preserva privacidade e Docker único;
-   um serviço gerenciado provavelmente teria precisão melhor, mas adicionaria credenciais,
-   custo e envio de PII.
-3. **PDF no banco versus object storage.** `bytea` torna refresh e demo autocontidos;
-   object storage seria a escolha para volume e retenção reais.
+### 1. Prisma versus SQL direto
+
+**Escolha:** Prisma.
+
+Prisma foi mantido porque o plano o escolhia como default e o modelo de dados é pequeno.
+
+SQL direto teria imagem menor, menos tooling no runtime e reduziria algumas bordas de integração. Em contrapartida, aumentaria o trabalho manual de migrations, queries e tipagem durante um desafio com tempo limitado.
+
+### 2. OCR local versus serviço externo
+
+**Escolha:** Tesseract.js.
+
+Tesseract.js preserva privacidade e mantém a solução autocontida no mesmo Docker.
+
+Um serviço gerenciado provavelmente teria precisão melhor para alguns scans, porém adicionaria credenciais, dependência externa, potencial custo e envio de PII para terceiros.
+
+### 3. PDF no banco versus object storage
+
+**Escolha:** PostgreSQL `bytea`.
+
+Armazenar o PDF no banco torna refresh, revisão e demo autocontidos e evita adicionar outra infraestrutura.
+
+Object storage seria a escolha mais adequada para volume, retenção e operação reais, mas acrescentaria uma dependência que não melhora a avaliação principal dentro do tempo do desafio.
+
+### 4. Estratégias por funções versus classes por layout
+
+**Escolha:** registry simples de funções.
+
+As estratégias de layout usam funções com responsabilidades explícitas em vez de uma classe, factory e injeção de dependência para cada formato.
+
+Essa solução evita transformar oito layouts de exemplo em uma arquitetura de plugins prematura.
+
+### 5. Profundidade de extractor versus ciclo completo
+
+**Escolha:** preservar o ciclo completo.
+
+Quando houver disputa por tempo, a solução aceita extração parcial e explícita em vez de sacrificar upload, processamento assíncrono, revisão, correção, persistência e download.
+
+Essa decisão segue a prioridade definida pelo próprio desafio.
+
+## Onde eu não confio totalmente na entrega
+
+### OCR de baixa qualidade
+
+OCR continua sendo a parte de menor previsibilidade.
+
+Documentos escaneados com baixa resolução, carimbos, ruído, escrita manual ou colunas pouco separadas podem produzir `?`, registros parciais ou cair em layout não suportado.
+
+A regra é preferir incerteza explícita ou erro legível a devolver um valor aparentemente correto e inventado.
+
+### Generalização dos parsers
+
+As estratégias de extração foram construídas para serem explícitas e separadas por layout, não para formar um parser universal.
+
+Isso reduz interferência entre layouts conhecidos, mas significa que documentos muito diferentes dos padrões cobertos podem exigir uma nova estratégia.
+
+### Processamento em memória
+
+O processamento assíncrono dentro do Nest é suficiente para o desafio e reduz infraestrutura.
+
+Ainda assim, não considero essa arquitetura apropriada para jobs duráveis em produção. Uma reinicialização pode interromper trabalhos que estavam apenas na memória.
 
 ## O que quebraria primeiro em produção
 
-- restart perde jobs que estavam apenas na memória;
-- OCR consome CPU e memória antes do PostgreSQL virar gargalo;
-- download do idioma do Tesseract pode falhar em ambiente sem saída de rede;
-- `bytea` aumenta rapidamente backup e I/O do banco;
-- sem autenticação ou rate limit, o endpoint público não deve receber documentos reais.
+- **Jobs em memória:** um restart perde execuções que ainda não haviam sido finalizadas. O bootstrap consegue marcar transcrições antigas como erro, mas não retoma o processamento.
+- **CPU e memória do OCR:** OCR tende a pressionar CPU e memória antes do PostgreSQL se tornar o principal gargalo.
+- **Dados de idioma do Tesseract:** o download ou carregamento do idioma pode falhar em um ambiente sem saída de rede ou sem o artefato previamente empacotado.
+- **PDF armazenado como `bytea`:** volume de PDFs aumenta rapidamente backup, I/O e tamanho do banco.
+- **Endpoint público:** sem autenticação ou rate limit, a aplicação demonstrativa não deve receber documentos reais em escala.
+- **Retenção:** qualquer falha no cleanup aumenta o tempo em que PII permanece armazenada.
+- **Layouts desconhecidos:** um documento fora das estratégias conhecidas deve falhar explicitamente em vez de tentar se encaixar em um parser incorreto.
+
+## Como a IA foi usada
+
+A IA foi usada principalmente como acelerador de implementação, revisão e exploração de alternativas.
+
+O fluxo adotado não tratou a saída do agente como autoridade final. Sugestões foram verificadas por:
+
+- typecheck;
+- testes unitários;
+- testes de API;
+- testes de fluxo completo;
+- execução em Docker;
+- inspeção visual do frontend;
+- comparação com o plano e os contratos do desafio.
+
+Durante o desenvolvimento ocorreram casos em que a primeira implementação gerada estava incorreta ou desalinhada com o projeto, incluindo o parser de holerite, a regex global, o import do Tesseract e a camada CSS.
+
+Esses casos foram mantidos neste registro porque fazem parte do processo: a utilidade do agente esteve na velocidade para propor e alterar código, enquanto a confiança veio de executar, observar e revisar o resultado.
+
+## O que eu faria diferente com mais tempo
+
+1. Empacotaria os dados de idioma usados pelo OCR na imagem para eliminar dependência de rede em runtime.
+2. Adicionaria rate limiting antes de expor o endpoint para uso real.
+3. Migraria jobs duráveis para uma fila persistente com worker separado.
+4. Migraria PDFs para object storage caso a retenção ou o volume deixassem de ser apenas de demonstração.
+
+## Estado final do processo
+
+A implementação terminou com o ciclo principal estruturado para:
+
+```text
+upload
+  -> processamento assíncrono
+  -> extração por texto ou OCR
+  -> estratégia de layout
+  -> validação
+  -> revisão humana
+  -> correção e persistência
+  -> exportação
+```
+
+As decisões priorizaram:
+
+- ciclo completo em vez de profundidade ilimitada de parser;
+- falha explícita em vez de dados inventados;
+- componentes simples em vez de infraestrutura prematura;
+- validação executável em vez de confiança apenas na geração de código;
+- documentação das limitações em vez de esconder pontos incompletos.
+
+A principal pendência de confiança permanece sendo a execução dos goldens contra os oito PDFs oficiais do corpus quando esses arquivos estiverem disponíveis.
