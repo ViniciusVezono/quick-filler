@@ -13,35 +13,32 @@ import {
 } from '../components/ui-classes'
 import { PayrollEditor } from '../features/review/payroll-editor'
 import { TimeCardEditor } from '../features/review/time-card-editor'
-import { downloadTranscription, getTranscription, pdfUrl, saveTranscription } from '../lib/api'
+import {
+  transcriptionKeys,
+  transcriptionMutations,
+  transcriptionQueries,
+  type TranscriptionExportFormat,
+} from '../features/transcription/transcription.queries'
+import { getTranscriptionPdfUrl } from '../features/transcription/transcription.service'
 
 export function TranscriptionPage() {
   const { id } = useParams({ from: '/transcricoes/$id' })
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState<TranscriptionValue | null>(null)
   const [dirty, setDirty] = useState(false)
-  const [format, setFormat] = useState<'xlsx' | 'csv' | 'json'>('xlsx')
+  const [format, setFormat] = useState<TranscriptionExportFormat>('xlsx')
   const [downloadError, setDownloadError] = useState<string | null>(null)
-  const query = useQuery({
-    queryKey: ['transcription', id],
-    queryFn: () => getTranscription(id),
-    refetchInterval: ({ state }) => (state.data?.status === 'processando' ? 1200 : false),
-  })
+  const query = useQuery(transcriptionQueries.detail(id))
   const saveMutation = useMutation({
-    mutationFn: (value: TranscriptionValue) => saveTranscription(id, value),
+    ...transcriptionMutations.save(id),
     onSuccess: (result) => {
-      queryClient.setQueryData(['transcription', id], result)
+      queryClient.setQueryData(transcriptionKeys.detail(id), result)
       setDraft(result.value)
       setDirty(false)
     },
   })
   const downloadMutation = useMutation({
-    mutationFn: async () => {
-      setDownloadError(null)
-      if (!draft) return
-      if (dirty) await saveMutation.mutateAsync(draft)
-      await downloadTranscription(id, format)
-    },
+    ...transcriptionMutations.download(id),
     onError: (error) => setDownloadError(error.message),
   })
 
@@ -52,6 +49,20 @@ export function TranscriptionPage() {
   function changeDraft(value: TranscriptionValue) {
     setDraft(value)
     setDirty(true)
+  }
+
+  function startDownload() {
+    setDownloadError(null)
+    if (!draft) return
+
+    if (dirty) {
+      saveMutation.mutate(draft, {
+        onSuccess: () => downloadMutation.mutate(format),
+      })
+      return
+    }
+
+    downloadMutation.mutate(format)
   }
 
   if (query.isPending)
@@ -141,7 +152,7 @@ export function TranscriptionPage() {
               className="h-11 w-full rounded-lg border border-slate-300 bg-white px-2.5 font-semibold text-slate-800 focus:border-navy-700 focus:outline-none focus:ring-3 focus:ring-blue-200/60 min-[769px]:w-auto"
               aria-label="Formato do download"
               value={format}
-              onChange={(event) => setFormat(event.target.value as typeof format)}
+              onChange={(event) => setFormat(event.target.value as TranscriptionExportFormat)}
             >
               <option value="xlsx">XLSX</option>
               <option value="csv">CSV</option>
@@ -150,10 +161,11 @@ export function TranscriptionPage() {
             <button
               className={buttonPrimary}
               type="button"
-              disabled={downloadMutation.isPending}
-              onClick={() => downloadMutation.mutate()}
+              disabled={saveMutation.isPending || downloadMutation.isPending}
+              onClick={startDownload}
             >
-              <DownloadIcon /> {downloadMutation.isPending ? 'Preparando…' : 'Baixar'}
+              <DownloadIcon />{' '}
+              {saveMutation.isPending || downloadMutation.isPending ? 'Preparando…' : 'Baixar'}
             </button>
           </div>
         </div>
@@ -178,7 +190,7 @@ export function TranscriptionPage() {
             </div>
             <a
               className="font-bold text-navy-700 underline-offset-2 hover:underline"
-              href={pdfUrl(id)}
+              href={getTranscriptionPdfUrl(id)}
               target="_blank"
               rel="noreferrer"
             >
@@ -187,7 +199,7 @@ export function TranscriptionPage() {
           </div>
           <iframe
             className="w-full flex-1 border-0 bg-slate-200"
-            src={`${pdfUrl(id)}#toolbar=1&navpanes=0`}
+            src={`${getTranscriptionPdfUrl(id)}#toolbar=1&navpanes=0`}
             title="PDF original"
           />
         </section>

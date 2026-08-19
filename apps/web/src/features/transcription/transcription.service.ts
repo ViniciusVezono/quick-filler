@@ -12,6 +12,7 @@ export type TranscriptionResponse = {
 
 async function parseError(response: Response): Promise<never> {
   let message = `A operação falhou (${response.status}).`
+
   try {
     const body = (await response.json()) as { message?: string | string[] }
     if (Array.isArray(body.message)) message = body.message.join(' ')
@@ -19,6 +20,7 @@ async function parseError(response: Response): Promise<never> {
   } catch {
     // A resposta pode não ser JSON; a mensagem genérica continua segura.
   }
+
   throw new Error(message)
 }
 
@@ -26,14 +28,17 @@ export async function uploadTranscription(file: File, tipo: DocumentType): Promi
   const form = new FormData()
   form.append('arquivo', file)
   form.append('tipo', tipo)
+
   const response = await fetch(`${apiUrl}/api/transcricoes`, { method: 'POST', body: form })
   if (!response.ok) return parseError(response)
+
   return response.json() as Promise<{ id: string }>
 }
 
 export async function getTranscription(id: string): Promise<TranscriptionResponse> {
   const response = await fetch(`${apiUrl}/api/transcricoes/${id}`)
   if (!response.ok) return parseError(response)
+
   return response.json() as Promise<TranscriptionResponse>
 }
 
@@ -47,12 +52,17 @@ export async function saveTranscription(
     body: JSON.stringify({ value }),
   })
   if (!response.ok) return parseError(response)
+
   return response.json() as Promise<TranscriptionResponse>
 }
 
-export async function downloadTranscription(id: string, format: 'xlsx' | 'csv' | 'json') {
+export async function downloadTranscription(
+  id: string,
+  format: 'xlsx' | 'csv' | 'json',
+): Promise<void> {
   const response = await fetch(`${apiUrl}/api/transcricoes/${id}/planilha?formato=${format}`)
   if (!response.ok) return parseError(response)
+
   const blob = await response.blob()
   const href = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -64,6 +74,6 @@ export async function downloadTranscription(id: string, format: 'xlsx' | 'csv' |
   URL.revokeObjectURL(href)
 }
 
-export function pdfUrl(id: string) {
+export function getTranscriptionPdfUrl(id: string): string {
   return `${apiUrl}/api/transcricoes/${id}/arquivo`
 }
