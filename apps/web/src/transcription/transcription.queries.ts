@@ -7,6 +7,8 @@ import {
   uploadTranscription,
 } from './transcription.service'
 
+const processingRefetchIntervalMs = 1200
+
 export type TranscriptionExportFormat = 'xlsx' | 'csv' | 'json'
 
 export type UploadTranscriptionVariables = {
@@ -24,7 +26,8 @@ export const transcriptionQueries = {
     queryOptions({
       queryKey: transcriptionKeys.detail(id),
       queryFn: () => getTranscription(id),
-      refetchInterval: ({ state }) => (state.data?.status === 'processando' ? 1200 : false),
+      refetchInterval: ({ state }) =>
+        state.data?.status === 'processando' ? processingRefetchIntervalMs : false,
     }),
 }
 

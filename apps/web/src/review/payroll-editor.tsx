@@ -1,5 +1,5 @@
 import { payrollPageWarning, type PayrollEntry, type PayrollValue } from '@quick-filler/domain'
-import { PlusIcon, TrashIcon } from '../../components/icons'
+import { PlusIcon, TrashIcon } from '../components/icons'
 import {
   dangerIconButton,
   eyebrow,
@@ -8,7 +8,7 @@ import {
   tableCell,
   tableHeadCell,
   textInput,
-} from '../../components/ui-classes'
+} from '../components/ui-classes'
 
 type Props = { value: PayrollValue; onChange(value: PayrollValue): void }
 

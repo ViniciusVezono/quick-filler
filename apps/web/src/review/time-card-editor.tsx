@@ -1,5 +1,5 @@
 import { timeCardDayWarning, type TimeCardValue } from '@quick-filler/domain'
-import { PlusIcon, TrashIcon } from '../../components/icons'
+import { PlusIcon, TrashIcon } from '../components/icons'
 import {
   buttonQuiet,
   dangerIconButton,
@@ -10,7 +10,7 @@ import {
   tableCell,
   tableHeadCell,
   textInput,
-} from '../../components/ui-classes'
+} from '../components/ui-classes'
 
 type Props = {
   value: TimeCardValue
